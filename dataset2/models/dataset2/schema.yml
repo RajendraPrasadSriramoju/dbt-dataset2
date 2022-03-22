@@ -1,0 +1,10 @@
+
+version: 2
+
+models:
+
+  - name: tb_txn_recon_data
+    description: "Final data storage post transformation "
+    tables:
+      - name: tb_txn_recon_data
+    

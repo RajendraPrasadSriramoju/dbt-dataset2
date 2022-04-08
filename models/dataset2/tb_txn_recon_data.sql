@@ -43,11 +43,11 @@ filter_debit_source_data as (
     case 
         when ref_agr1 = ref_agr2 and ref_agr2 = ref_agr3 then
             ref_agr1
-        when length(ref_agr1) > 7 and length(ref_agr1) <14 then
-            ref_agr1
+        when length(ref_agr3) > 7 and length(ref_agr3) <14 then
+            ref_agr3
         when length(ref_agr2) > 7 and length(ref_agr2) <14 then
             ref_agr2
-        when length(ref_agr3) > 7 and length(ref_agr3) <14 then
+        when length(ref_agr1) > 7 and length(ref_agr1) <14 then
             ref_agr3
         ELSE
             null    
@@ -58,42 +58,43 @@ filter_credit_source_data as (
     case 
         when ref_agr1 = ref_agr2 and ref_agr2 = ref_agr3 then
             ref_agr1
-        when length(ref_agr1) > 7 and length(ref_agr1) <14 then
-            ref_agr1
-        when length(ref_agr2) > 7 and length(ref_agr2) <14 then
-            ref_agr2
         when length(ref_agr3) > 7 and length(ref_agr3) <14 then
             ref_agr3
+        when length(ref_agr2) > 7 and length(ref_agr2) <14 then
+            ref_agr2
+        when length(ref_agr1) > 7 and length(ref_agr1) <14 then
+            ref_agr1
         ELSE
             null    
     end as agreement_no  from filter_credit_source_enrich1 s
 ),
 filter_debit_matched_data as (
-    select sd.*, sd.agreement_no as recon_link_id 
+    select sd.*, 
+    agreement_no as recon_link_id
     from filter_debit_source_data sd
-    where sd.agreement_no in (
-        (
+    where agreement_no in (
             select dbt_grp.agreement_no from
-            (select sum(amt_txn) as dbt_grp_amt, agreement_no from filter_debit_source_data group by agreement_no) dbt_grp,
-            (select sum(amt_txn) as cdt_grp_amt, agreement_no from filter_credit_source_data group by agreement_no) cdt_grp
-            where dbt_grp.agreement_no = cdt_grp.agreement_no
-                and dbt_grp.dbt_grp_amt = cdt_grp.cdt_grp_amt
-        )
+            (select sum(amt_txn) as dbt_grp_amt, agreement_no from filter_debit_source_data 
+            group by agreement_no) dbt_grp,
+            (select sum(amt_txn) as cdt_grp_amt, agreement_no from filter_credit_source_data 
+            group by agreement_no) cdt_grp
+            where dbt_grp.agreement_no = cdt_grp.agreement_no 
+            and dbt_grp.dbt_grp_amt = cdt_grp.cdt_grp_amt
     )
     
 ),
 filter_credit_matched_data as (
-    select sc.*, sc.agreement_no as recon_link_id 
+    select sc.*, agreement_no as recon_link_id
     from filter_credit_source_data sc  
-    where sc.agreement_no in (
-        (
+    where agreement_no in (
             select cdt_grp.agreement_no from 
-            (select sum(amt_txn) as dbt_grp_amt, agreement_no from filter_debit_source_data group by agreement_no) dbt_grp,
-            (select sum(amt_txn) as cdt_grp_amt, agreement_no from filter_credit_source_data group by agreement_no) cdt_grp
-            where dbt_grp.agreement_no = cdt_grp.agreement_no
-                and dbt_grp.dbt_grp_amt = cdt_grp.cdt_grp_amt
+            (select sum(amt_txn) as dbt_grp_amt, agreement_no from filter_debit_source_data 
+            group by agreement_no) dbt_grp,
+            (select sum(amt_txn) as cdt_grp_amt, agreement_no from filter_credit_source_data 
+            group by agreement_no) cdt_grp
+            where dbt_grp.agreement_no = cdt_grp.agreement_no 
+            and dbt_grp.dbt_grp_amt = cdt_grp.cdt_grp_amt
         )
-    )
 ),
 filter_credit_unmatched_data as (
     select fcs.amt_txn,
